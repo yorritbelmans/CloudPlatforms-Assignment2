@@ -22,7 +22,7 @@ az bicep install && az bicep upgrade
 
 
 ## Bicep Deployments
-### Create recource group
+### recource group setup
 [resourcegroup.bicep](Bicep/tests/resourcegroup.bicep) file in repo
 
 #### Run Deployment:
@@ -31,7 +31,7 @@ az deployment sub create --template-file resourcegroup.bicep --location eastus
 ```
 
 
-### Azure Container Registry
+### Azure Container Registry setup
 [containerRegistry.bicep](Bicep/tests/containerRegistry.bicep) file in repo
 
 #### Run Deployment:
