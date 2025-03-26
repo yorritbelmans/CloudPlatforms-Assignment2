@@ -1,0 +1,16 @@
+FROM python:3.9
+WORKDIR /app
+COPY ./example-flask-crud .
+
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
+
+RUN export FLASK_APP=crudapp.py
+
+RUN flask db init && \
+    flask db migrate -m "entries table" && \
+    flask db upgrade
+
+EXPOSE 80
+
+CMD ["flask", "run", "--host=0.0.0.0", "--port=80"]
