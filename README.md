@@ -20,8 +20,8 @@ az login
 az bicep install && az bicep upgrade
 ```
 
-<details>
-<summary> ## Bicep Deployments</summary>
+
+## Bicep Deployments
 ### Create recource group
 [resourcegroup.bicep](Bicep/tests/resourcegroup.bicep) file in repo
 
@@ -52,5 +52,3 @@ docker tag [DOCKER IMAGE NAME] [FULL LOGIN SERVER NAME]/crud-app:v1
 ```
 docker push [IMAGE WITH NEW TAG]
 ```
-
-</details>
