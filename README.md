@@ -2,7 +2,7 @@
 ## Azure Infrastucture-as-code
 #### Thomas More Geel (2CCS02)
 
-### Azure Cli & Bicep Setup
+## Azure Cli & Bicep Setup
 
 - Ubuntu Azure CLI intall:
 ```
@@ -21,32 +21,32 @@ az bicep install && az bicep upgrade
 ```
 
 
-### Bicep Deployments
-#### Create recource group
+## Bicep Deployments
+### Create recource group
 [resourcegroup.bicep](Bicep/tests/resourcegroup.bicep) file in repo
 
-Run Deployment:
+#### Run Deployment:
 ```
 az deployment sub create --template-file resourcegroup.bicep --location eastus
 ```
 
 
-#### Azure Container Registry
+### Azure Container Registry
 [containerRegistry.bicep](Bicep/tests/containerRegistry.bicep) file in repo
 
-Run Deployment:
+#### Run Deployment:
 ```
 az deployment group create --resource-group Test --template-file containerRegistry.bicep --parameters acrName=assignment2
 ```
 
-#####Push image to registry
+#### Push image to registry
 1. Login to registry
 ```
 az acr login --name [ACR NAME]
 ```
 2. Build docker file and tag
 ```
-docker tag [DOCKER IMAGE NAME] [FULL LOGIN SERVER NAME]
+docker tag [DOCKER IMAGE NAME] [FULL LOGIN SERVER NAME]/crud-app:v1
 ```
 3. Push image to registry
 ```
