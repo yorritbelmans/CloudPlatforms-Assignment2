@@ -20,8 +20,8 @@ az login
 az bicep install && az bicep upgrade
 ```
 
-
-## Bicep Deployments
+<details>
+<summary> ## Bicep Deployments</summary>
 ### Create recource group
 [resourcegroup.bicep](Bicep/tests/resourcegroup.bicep) file in repo
 
@@ -39,7 +39,7 @@ az deployment sub create --template-file resourcegroup.bicep --location eastus
 az deployment group create --resource-group Test --template-file containerRegistry.bicep --parameters acrName=assignment2
 ```
 
-#### Push image to registry
+#### Push image to registry (Azure CLI)
 1. Login to registry
 ```
 az acr login --name [ACR NAME]
@@ -52,3 +52,5 @@ docker tag [DOCKER IMAGE NAME] [FULL LOGIN SERVER NAME]/crud-app:v1
 ```
 docker push [IMAGE WITH NEW TAG]
 ```
+
+</details>
