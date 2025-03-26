@@ -38,3 +38,17 @@ Run Deployment:
 ```
 az deployment group create --resource-group Test --template-file containerRegistry.bicep --parameters acrName=assignment2
 ```
+
+#####Push image to registry
+1. Login to registry
+```
+az acr login --name [ACR NAME]
+```
+2. Build docker file and tag
+```
+docker tag [DOCKER IMAGE NAME] [FULL LOGIN SERVER NAME]
+```
+3. Push image to registry
+```
+docker push [IMAGE WITH NEW TAG]
+```
