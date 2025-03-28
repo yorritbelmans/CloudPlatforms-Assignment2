@@ -27,7 +27,13 @@ az bicep install && az bicep upgrade
 
 #### Run Deployment:
 ```
-az deployment sub create --template-file resourcegroup.bicep --location eastus
+az deployment sub create --template-file resourcegroup.bicep --location westeurope
+```
+### Networking Setup
+NetworkingSetup.bicep
+
+```
+az deployment group create --template-file NetworkSetup.bicep
 ```
 
 
@@ -52,3 +58,15 @@ docker tag [DOCKER IMAGE NAME] [FULL LOGIN SERVER NAME]/crud-app:v1
 ```
 docker push [IMAGE WITH NEW TAG]
 ```
+
+
+
+#### Azure repository token
+
+```
+az acr token create --name cloudToken --registry assignment2 --repository crud-app content/write content/read --output json
+```
+
+´´´
+docker login assignment2.azurecr.io -u cloudToken -p wXOB5J3OHe4Q1eS93PQNaJgjrYrid6iBWN8nx47MFg+ACRCYgiRy
+´´´

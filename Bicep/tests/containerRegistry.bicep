@@ -1,5 +1,5 @@
 @description('Generates a unique but consistent name based on the Resource Group Name')
-param acrName string = 'acr${uniqueString(resourceGroup().name)}'
+param acrName string = 'assignment2'
 
 @description('Automatically sets the location to the same as the Resource Group.')
 param location string = resourceGroup().location
