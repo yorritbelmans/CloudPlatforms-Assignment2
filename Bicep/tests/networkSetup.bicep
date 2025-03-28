@@ -16,10 +16,14 @@ param nsgName string = 'CloudNSG'
 @description('Port to expose on the container')
 param containerPort int = 80
 
+@description('Name for the loadbalancer')
+param loadBalancerName string = 'CloudLoadBalancer'
+
+@description('Name for the backendpoolname')
+param backendPoolName string = 'CloudBackEndPool'
 
 
-
-// ✅ Create Public IP
+// Create Public IP
 resource publicIp 'Microsoft.Network/publicIPAddresses@2022-07-01' = {
   name: publicIpName
   location: location
@@ -91,6 +95,3 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2022-07-01' = {
     ]
   }
 }
-
-
-

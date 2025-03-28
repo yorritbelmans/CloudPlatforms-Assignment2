@@ -1,43 +1,66 @@
+@description('Public IP Name')
+param publicIpName string = 'CloudPublicIP'
+
 @description('Resource Group Location')
 param location string = resourceGroup().location
 
 @description('Virtual Network Name')
 param vnetName string = 'CloudVnet'
 
-@description('Subnet Name')
-param subnetName string = 'CloudSubnet'
+@description('Subnet Name for aci')
+param ACIsubnetName string = 'CloudSubnet-ACI'
 
-@description('Azure Container Registry Name')
-param acrName string = 'CloudACR'
-
-@description('Container Name')
-param containerName string = 'CrudApp'
-
-@description('Public IP Name')
-param publicIpName string = 'CloudPublicIP'
+@description('Subnet Name for app gateway')
+param APGsubnetName string = 'CloudSubnet-APG'
 
 @description('Network Security Group Name')
 param nsgName string = 'CloudNSG'
 
-@description('Container Instance Name')
-param aciName string = 'CloudpACI'
-
-@description('ACR SKU Type')
-param acrSku string = 'Basic'
-
-@description('Container Image Name')
-param containerImage string = 'CloudACR.azurecr.io/cloudassignment2:v1'
-
-@description('Container CPU Units')
-param cpuCores int = 1
-
-@description('Container Memory in GB')
-param memoryInGb int = 1
-
 @description('Port to expose on the container')
 param containerPort int = 80
 
-// ✅ Create Virtual Network
+
+
+
+@description('Name for the container group')
+param name string = 'cloud-assignment1-app'
+
+@description('Container image to deploy. Should be of the form repoName/imagename:tag for images stored in public Docker Hub, or a fully qualified URI for other registries. Images from private registries require additional registry credentials.')
+param image string = 'assignment2.azurecr.io/crud-app:v1'
+
+@description('Port to open on the container and the public IP address.')
+param port int = 80
+
+@description('The number of CPU cores to allocate to the container.')
+param cpuCores int = 1
+
+@description('The amount of memory to allocate to the container in gigabytes.')
+param memoryInGb int = 1
+
+@description('The behavior of Azure runtime if container has stopped.')
+@allowed([
+  'Always'
+  'Never'
+  'OnFailure'
+])
+param restartPolicy string = 'Always'
+
+
+
+param appGwName string = 'CloudAppGateway'
+param aciPort int = 80
+
+
+// Create Public IP
+resource publicIp 'Microsoft.Network/publicIPAddresses@2022-07-01' = {
+  name: publicIpName
+  location: location
+  properties: {
+    publicIPAllocationMethod: 'Static'
+  }
+}
+
+// Create Virtual Network
 resource vnet 'Microsoft.Network/virtualNetworks@2022-07-01' = {
   name: vnetName
   location: location
@@ -47,25 +70,31 @@ resource vnet 'Microsoft.Network/virtualNetworks@2022-07-01' = {
     }
     subnets: [
       {
-        name: subnetName
+        name: ACIsubnetName
         properties: {
           addressPrefix: '10.0.1.0/24'
+          delegations: [
+            {
+              name: 'aciDelegation'
+              properties: {
+                serviceName: 'Microsoft.ContainerInstance/containerGroups'
+              }
+            }
+          ]
+        }
+      }
+      {
+        name: APGsubnetName
+        properties: {
+          addressPrefix: '10.0.2.0/24'
         }
       }
     ]
   }
 }
 
-// ✅ Create Public IP
-resource publicIp 'Microsoft.Network/publicIPAddresses@2022-07-01' = {
-  name: publicIpName
-  location: location
-  properties: {
-    publicIPAllocationMethod: 'Dynamic'
-  }
-}
 
-// ✅ Create Network Security Group (NSG)
+// Create Network Security Group (NSG)
 resource nsg 'Microsoft.Network/networkSecurityGroups@2022-07-01' = {
   name: nsgName
   location: location
@@ -101,59 +130,142 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2022-07-01' = {
   }
 }
 
-// ✅ Create Azure Container Registry (ACR)
-resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
-  name: acrName
-  location: location
-  sku: {
-    name: acrSku
-  }
-  properties: {
-    adminUserEnabled: false
-  }
-}
 
-// ✅ Deploy Azure Container Instance (ACI)
-resource aci 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = {
-  name: aciName
+
+// ACI container creation
+resource container 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = {
+  name: name
   location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     containers: [
       {
-        name: containerName
+        name: name
         properties: {
-          image: containerImage
+          image: image
+          ports: [
+            {
+              port: port
+              protocol: 'TCP'
+            }
+          ]
           resources: {
             requests: {
               cpu: cpuCores
               memoryInGB: memoryInGb
             }
           }
-          ports: [
+        }
+      }
+    ]
+    osType: 'Linux'
+    restartPolicy: restartPolicy
+    ipAddress: {
+      type: 'Private'
+      ports: [
+        {
+          port: port
+          protocol: 'TCP'
+        }
+      ]
+    }
+    subnetIds: [
+      {
+        id: vnet.properties.subnets[0].id
+      }
+    ]
+    imageRegistryCredentials: [
+      {
+        server: 'assignment2.azurecr.io'
+        username: 'cloudtoken'
+        password: 'wXOB5J3OHe4Q1eS93PQNaJgjrYrid6iBWN8nx47MFg+ACRCYgiRy'
+      }
+    ]
+  }
+}
+
+
+
+// Create Application Gateway
+resource appGateway 'Microsoft.Network/applicationGateways@2021-05-01' = {
+  name: appGwName
+  location: location
+  properties: {
+    sku: {
+      name: 'Standard_v2'
+      tier: 'Standard_v2'
+    }
+    gatewayIPConfigurations: [
+      {
+        name: 'gatewayConfig'
+        properties: {
+          subnet: {
+            id: vnet.properties.subnets[1].id
+          }
+        }
+      }
+    ]
+    frontendIPConfigurations: [
+      {
+        name: 'frontendConfig'
+        properties: {
+          publicIPAddress: {
+            id: publicIp.id
+          }
+        }
+      }
+    ]
+    backendAddressPools: [
+      {
+        name: 'backendPool'
+        properties: {
+          backendAddresses: [
             {
-              protocol: 'TCP'
-              port: containerPort
+              ipAddress: container.properties.ipAddress.ip
             }
           ]
         }
       }
     ]
-    osType: 'Linux'
-    restartPolicy: 'Always'
-    ipAddress: {
-      type: 'Public'
-      ports: [
-        {
-          protocol: 'TCP'
-          port: containerPort
+    backendHttpSettingsCollection: [
+      {
+        name: 'httpSettings'
+        properties: {
+          port: aciPort
+          protocol: 'Http'
+          requestTimeout: 20
         }
-      ]
-    }
-    // networkProfile: {
-    //   id: vnet.id
-    // }
+      }
+    ]
+    httpListeners: [
+      {
+        name: 'httpListener'
+        properties: {
+          frontendIPConfiguration: {
+            id: resourceId('Microsoft.Network/applicationGateways', appGwName, 'frontendIPConfigurations/frontendConfig') 
+          }
+          protocol: 'Http'
+        }
+      }
+    ]
+    requestRoutingRules: [
+      {
+        name: 'rule1'
+        properties: {
+          ruleType: 'Basic'
+          httpListener: {
+            id: resourceId('Microsoft.Network/applicationGateways', appGwName, 'httpListeners', 'httpListener')
+          }
+          backendAddressPool: {
+            id: resourceId('Microsoft.Network/applicationGateways', appGwName, 'backendAddressPools', 'backendPool')
+          }
+          backendHttpSettings: {
+            id: resourceId('Microsoft.Network/applicationGateways', appGwName, 'backendHttpSettingsCollection', 'httpSettings')
+          }
+        }
+      }
+    ]
   }
 }
-
-// ✅ Output the Public IP Address
-// output publicIPAddress string = publicIp.properties.ipAddress
