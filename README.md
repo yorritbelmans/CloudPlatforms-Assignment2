@@ -6,15 +6,11 @@ This repository contains the code for my individual assignment as part of my stu
 
 The project includes the following steps:
 
-    Learning about IaC and using Bicep templates to automate resource deployment.
-
-    Building a container image for a Flask-based CRUD app.
-
-    Creating an Azure Container Registry (ACR) and pushing the container image.
-
-    Deploying the container to Azure Container Instances (ACI).
-
-    Implementing best practices such as network configuration, security, and monitoring.
+ - Learning about IaC and using Bicep templates to automate resource deployment.
+ - Building a container image for a Flask-based CRUD app.
+ - Creating an Azure Container Registry (ACR) and pushing the container image.
+ - Deploying the container to Azure Container Instances (ACI).
+ - Implementing best practices such as network configuration, security, and monitoring.
 
 A diagram of the architecture and detailed steps are included to explain how I set up the infrastructure. All resources were cleaned up after the project to save Azure credits.
 
