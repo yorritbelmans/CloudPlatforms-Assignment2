@@ -75,9 +75,9 @@ az deployment group create --template-file containerRegistry.bicep
 az acr token create --name cloudToken --registry [REGISTRY NAME] --repository [REPO LINK] content/write content/read --output json
 ```
 
-´´´
+```
 docker login assignment2.azurecr.io -u [TOKEN NAME] -p [TOKEN PASSWORD]
-´´´
+```
 
 #### Push image to registry (Azure CLI)
 1. Login to registry
