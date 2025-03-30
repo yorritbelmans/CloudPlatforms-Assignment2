@@ -47,14 +47,25 @@ param restartPolicy string = 'Always'
 
 
 
+@description('Name of the Log Analytics Workspace')
+param logAnalyticsWorkspaceName string = 'CloudLogWorkspace'
+
+
+
 param appGwName string = 'CloudAppGateway'
 param aciPort int = 80
+
+
+
 
 
 // Create Public IP
 resource publicIp 'Microsoft.Network/publicIPAddresses@2022-07-01' = {
   name: publicIpName
   location: location
+  sku: {
+    name: 'Standard'
+  }
   properties: {
     publicIPAllocationMethod: 'Static'
   }
@@ -81,6 +92,9 @@ resource vnet 'Microsoft.Network/virtualNetworks@2022-07-01' = {
               }
             }
           ]
+          networkSecurityGroup: {
+            id: nsg.id // Associate NSG
+          }
         }
       }
       {
@@ -130,12 +144,21 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2022-07-01' = {
   }
 }
 
+// Create Analytics logs for aci container logs
+resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+  name: logAnalyticsWorkspaceName
+  location: location
+  properties: {}
+}
 
 
 // ACI container creation
 resource container 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = {
   name: name
   location: location
+  dependsOn: [
+    // vnet
+  ]
   identity: {
     type: 'SystemAssigned'
   }
@@ -162,6 +185,12 @@ resource container 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = {
     ]
     osType: 'Linux'
     restartPolicy: restartPolicy
+    diagnostics: {
+      logAnalytics: {
+        workspaceId: logAnalytics.properties.customerId
+        workspaceKey: logAnalytics.listKeys().primarySharedKey
+      }
+    }
     ipAddress: {
       type: 'Private'
       ports: [
@@ -189,13 +218,19 @@ resource container 'Microsoft.ContainerInstance/containerGroups@2023-05-01' = {
 
 
 // Create Application Gateway
-resource appGateway 'Microsoft.Network/applicationGateways@2021-05-01' = {
+resource appGateway 'Microsoft.Network/applicationGateways@2021-08-01' = {
   name: appGwName
   location: location
+  dependsOn: [
+    // vnet
+    // publicIp
+    // container
+  ]
   properties: {
     sku: {
       name: 'Standard_v2'
       tier: 'Standard_v2'
+      capacity: 1 
     }
     gatewayIPConfigurations: [
       {
@@ -214,6 +249,14 @@ resource appGateway 'Microsoft.Network/applicationGateways@2021-05-01' = {
           publicIPAddress: {
             id: publicIp.id
           }
+        }
+      }
+    ]
+    frontendPorts: [
+      {
+        name: 'frontendPort'
+        properties: {
+          port: 80
         }
       }
     ]
@@ -244,7 +287,10 @@ resource appGateway 'Microsoft.Network/applicationGateways@2021-05-01' = {
         name: 'httpListener'
         properties: {
           frontendIPConfiguration: {
-            id: resourceId('Microsoft.Network/applicationGateways', appGwName, 'frontendIPConfigurations/frontendConfig') 
+            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGwName, 'frontendConfig')
+          }
+          frontendPort: {
+            id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGwName, 'frontendPort')
           }
           protocol: 'Http'
         }
@@ -255,14 +301,15 @@ resource appGateway 'Microsoft.Network/applicationGateways@2021-05-01' = {
         name: 'rule1'
         properties: {
           ruleType: 'Basic'
+          priority: 100
           httpListener: {
-            id: resourceId('Microsoft.Network/applicationGateways', appGwName, 'httpListeners', 'httpListener')
+            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGwName, 'httpListener')
           }
           backendAddressPool: {
-            id: resourceId('Microsoft.Network/applicationGateways', appGwName, 'backendAddressPools', 'backendPool')
+            id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', appGwName, 'backendPool')
           }
           backendHttpSettings: {
-            id: resourceId('Microsoft.Network/applicationGateways', appGwName, 'backendHttpSettingsCollection', 'httpSettings')
+            id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', appGwName, 'httpSettings')
           }
         }
       }
